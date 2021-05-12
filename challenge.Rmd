@@ -20,4 +20,178 @@ library("knitr")
 library("rmarkdown")
 library("corrplot")
 library("gtrendsR")
+library(readr) 
+library(purrr) 
+library(crossmap)
+library(lubridate)
+library(fixest)
+
 ```
+
+```{r}
+#cargo los ids de los estados y DC
+data("countries")
+edos <- countries %>% 
+  filter(country_code=="US") %>% 
+  filter(!is.na(sub_code)) %>% 
+  select(sub_code) %>% 
+  pull() %>% 
+  unique() %>% 
+  head(51)
+
+# Load your keywords list (.csv file) 
+kwlist <- readLines("palabras.csv")
+
+#cargo las fechas de lockdown y les pego el identificador de cada edo
+fechas <- read.csv("fechasperronas.csv")
+fechas$State <- toupper(fechas$State)
+fechas <- fechas %>% 
+  rename(name=State)
+
+counts <- countries %>% 
+  filter(country_code=="US") %>% 
+  filter(!is.na(sub_code)) %>% 
+  head(51)
+
+fechas_join <- left_join(x=fechas,y=counts,by=c("name")) %>% 
+  rename(geo=sub_code)
+
+#jalo las muertes y las atraso un dia
+muertes <- read.csv("all-states-history.csv") %>% 
+  select(date,state,death) %>% 
+  mutate(state=paste0("US-",state),date=as.Date(date)+1) %>% 
+  rename(geo=state)
+
+```
+
+```{r}
+
+ 
+# The function wrap all the arguments of the gtrendR::trends function and return only the interest_over_time (you can change that)
+googleTrendsData <- function (keywords,country,time) { 
+  
+  # Set the geographic region, time span, Google product,... 
+  # for more information read the official documentation https://cran.r-project.org/web/packages/gtrendsR/gtrendsR.pdf 
+  #keywords <- kwlist
+  #country <- "US" 
+  channel <- 'web' 
+  
+  trends <- gtrends(keywords, 
+                   gprop = channel,
+                   geo = country,
+                   time = time,
+                   category=7) 
+    
+  Sys.sleep(3)
+  
+  results <- trends$interest_over_time 
+  results$hits <- as.character(results$hits)
+  return(results)
+  } 
+date <- c("2019-01-01 2019-04-10","2020-01-01 2020-04-10") 
+
+# googleTrendsData function is executed over the cross product of kwlist,edos and date for daily data
+# and the weekday and week variables are created
+output <- xmap_dfr(.l = list(kwlist,edos,date),
+                  .f = ~ googleTrendsData(..1,..2,..3) ) %>% 
+  mutate(weekday=wday(as.Date(date)),week=week(as.Date(date)))
+  
+ 
+# Download the dataframe "output" as a .csv file 
+write.csv(output, "download_diarias.csv")
+
+date <- c("2019-01-01 2020-04-10")
+
+# googleTrendsData function is executed over the cross product of kwlist,edos and date for daily data
+# and the weekday and week variables are created
+output_week <- xmap_dfr(.l = list(kwlist, edos,date),
+                  .f = ~ googleTrendsData(..1,..2,..3) ) 
+ 
+# Download the dataframe "output" as a .csv file 
+write.csv(output_week, "download_semanal.csv")
+```
+
+```{r rescaling}
+#output <- read.csv("download_diarias.csv")
+#output_week <- read.csv("download_semanal.csv")
+
+#convierto los hits de character a numeric
+output$hits <- as.numeric(output$hits)
+output_week$hits <- as.numeric(output_week$hits)
+
+# calculo el interes promedio por palabra del periodo 2019-10 abril 2020
+period_mean <- output_week %>% 
+  group_by(keyword,geo) %>%
+  summarise(period_mean=mean(hits),.groups="keep") %>% 
+  ungroup() 
+
+# junto el calculo anterior con los datos
+output <- left_join(x=output,y=period_mean,by=c("keyword","geo"))
+
+# calculo el promedio por semana para los datos diarios por estado y palabra
+# luego hago los pesos y corrijo y reescalo los hits
+week_share <- output %>% 
+  group_by(keyword,geo,week) %>% 
+  mutate(weights=period_mean/mean(hits)) %>% 
+  mutate(hits_aux=hits*weights) %>% 
+  mutate(hits_corrected=100*hits_aux/max(hits_aux)) %>% 
+  ungroup()
+
+
+
+
+
+```
+
+
+```{r treatment}
+
+# a cada estado le pego la fecha en que anunciarion, entro en vigor y empezo en la primera ciudad el lockdown
+# y vienen en otro formato entonces se los cambio
+
+week_share_join <- left_join(x=week_share,y=fechas_join,by=c("geo"))
+week_share_join$date <- as.Date(week_share_join$date)
+week_share_join$Lockdown.announced <- as.Date(week_share_join$Lockdown.announced,"%d/%m/%Y")
+week_share_join$Lockdown.effective <- as.Date(week_share_join$Lockdown.effective,"%d/%m/%Y")
+week_share_join$X1st.city.county.lockdown.effective <- as.Date(week_share_join$X1st.city.county.lockdown.effective,"%d/%m/%Y")
+
+# creo las variables de si estan despues del lockdown o no
+
+week_share_join <- week_share_join %>% 
+  mutate(treat_announced=ifelse(date>=Lockdown.announced,1,0))%>% 
+  mutate(treat_announced=ifelse(is.na(treat_announced),0,treat_announced)) %>% 
+  mutate(treat_effective=ifelse(date>=Lockdown.effective,1,0))%>% 
+  mutate(treat_effective=ifelse(is.na(treat_effective),0,treat_effective)) %>%
+  mutate(treat_1stcity=ifelse(date>=X1st.city.county.lockdown.effective,1,0)) %>% 
+  mutate(treat_1stcity=ifelse(is.na(treat_1stcity),0,treat_1stcity))
+  
+
+
+
+
+```
+
+```{r muertes}
+
+# le pego las muertes a la base
+
+base_final <- left_join(x=week_share_join,y=muertes,by=c("date","geo")) %>% 
+  mutate(death=ifelse(is.na(death),0,death)) %>%
+  mutate(year=year(date))
+
+
+
+```
+
+
+```{r dif}
+
+#corro el dif in dif para cada palabra de la lista
+
+difs <- map(kwlist,function(x){
+  feols(hits_corrected ~ death + i(treat_announced,year,2019) | weekday + geo + week + year,filter(base_final,keyword==x),cluster=~date)
+}
+  )
+
+```
+
