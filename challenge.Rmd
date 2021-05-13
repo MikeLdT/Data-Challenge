@@ -25,6 +25,7 @@ library(purrr)
 library(crossmap)
 library(lubridate)
 library(fixest)
+library(naniar)
 
 ```
 
@@ -98,7 +99,7 @@ output <- xmap_dfr(.l = list(kwlist,edos,date),
   
  
 # Download the dataframe "output" as a .csv file 
-write.csv(output, "download_diarias.csv")
+write.csv(output, "download_diarias.csv",replace=T)
 
 date <- c("2019-01-01 2020-04-10")
 
@@ -112,11 +113,13 @@ write.csv(output_week, "download_semanal.csv")
 ```
 
 ```{r rescaling}
-#output <- read.csv("download_diarias.csv")
-#output_week <- read.csv("download_semanal.csv")
+output <- read.csv("download_diarias.csv") 
+output_week <- read.csv("download_semanal.csv")
 
 #convierto los hits de character a numeric
 output$hits <- as.numeric(output$hits)
+output <- output %>% 
+  mutate(hits=ifelse(is.na(hits),0,hits))
 output_week$hits <- as.numeric(output_week$hits)
 
 # calculo el interes promedio por palabra del periodo 2019-10 abril 2020
@@ -135,6 +138,7 @@ week_share <- output %>%
   mutate(weights=period_mean/mean(hits)) %>% 
   mutate(hits_aux=hits*weights) %>% 
   mutate(hits_corrected=100*hits_aux/max(hits_aux)) %>% 
+  mutate(hits_corrected=ifelse(is.na(hits_corrected),0,hits_corrected)) %>% 
   ungroup()
 
 
@@ -192,6 +196,8 @@ difs <- map(kwlist,function(x){
   feols(hits_corrected ~ death + i(treat_announced,year,2019) | weekday + geo + week + year,filter(base_final,keyword==x),cluster=~date)
 }
   )
+
+
 
 ```
 
