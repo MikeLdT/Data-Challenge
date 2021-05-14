@@ -26,6 +26,7 @@ library(crossmap)
 library(lubridate)
 library(fixest)
 library(naniar)
+library(future)
 
 ```
 
@@ -65,7 +66,7 @@ muertes <- read.csv("all-states-history.csv") %>%
 
 ```
 
-```{r}
+```{r bajarPalabras, eval=F}
 
  
 # The function wrap all the arguments of the gtrendR::trends function and return only the interest_over_time (you can change that)
@@ -93,20 +94,23 @@ date <- c("2019-01-01 2019-04-10","2020-01-01 2020-04-10")
 
 # googleTrendsData function is executed over the cross product of kwlist,edos and date for daily data
 # and the weekday and week variables are created
-output <- xmap_dfr(.l = list(kwlist,edos,date),
-                  .f = ~ googleTrendsData(..1,..2,..3) ) %>% 
+
+output <- future_xmap_dfr(.l = list(kwlist,edos,date),
+                  .f = ~ googleTrendsData(..1,..2,..3),
+                  .progress = T) %>% 
   mutate(weekday=wday(as.Date(date)),week=week(as.Date(date)))
   
  
 # Download the dataframe "output" as a .csv file 
-write.csv(output, "download_diarias.csv",replace=T)
+write.csv(output, "download_diarias.csv")
 
 date <- c("2019-01-01 2020-04-10")
 
 # googleTrendsData function is executed over the cross product of kwlist,edos and date for daily data
 # and the weekday and week variables are created
-output_week <- xmap_dfr(.l = list(kwlist, edos,date),
-                  .f = ~ googleTrendsData(..1,..2,..3) ) 
+output_week <- future_xmap_dfr(.l = list(kwlist, edos,date),
+                  .f = ~ googleTrendsData(..1,..2,..3),
+                  .progress = T) 
  
 # Download the dataframe "output" as a .csv file 
 write.csv(output_week, "download_semanal.csv")
@@ -198,6 +202,15 @@ difs <- map(kwlist,function(x){
   )
 
 
+```
+
+
+```{r,results='asis'}
+a <- etable(difs[1],tex = F)
+kable(a,format = "html")
+```
+
+```{r}
 
 ```
 
