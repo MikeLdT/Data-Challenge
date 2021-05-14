@@ -1,5 +1,5 @@
 ---
-title: "Your Document Title"
+title: "Blog"
 author: "Document Author"
 date: "`r Sys.Date()`"
 output:
@@ -99,7 +99,7 @@ output <- xmap_dfr(.l = list(kwlist,edos,date),
   
  
 # Download the dataframe "output" as a .csv file 
-write.csv(output, "download_diarias.csv",replace=T)
+write.csv(output, "download_diarias.csv")
 
 date <- c("2019-01-01 2020-04-10")
 
