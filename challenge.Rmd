@@ -1,5 +1,5 @@
 ---
-title: "Blog"
+title: "Your Document Title"
 author: "Document Author"
 date: "`r Sys.Date()`"
 output:
