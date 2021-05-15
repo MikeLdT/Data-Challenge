@@ -97,7 +97,7 @@ date <- c("2019-01-01 2019-04-10","2020-01-01 2020-04-10")
 
 output <- future_xmap_dfr(.l = list(kwlist,edos,date),
                   .f = ~ googleTrendsData(..1,..2,..3),
-                  .progress = T) %>% 
+                  .progress = T, .options = furrr_options(seed = NULL)) %>% 
   mutate(weekday=wday(as.Date(date)),week=week(as.Date(date)))
   
  
@@ -138,7 +138,8 @@ output <- left_join(x=output,y=period_mean,by=c("keyword","geo"))
 # calculo el promedio por semana para los datos diarios por estado y palabra
 # luego hago los pesos y corrijo y reescalo los hits
 week_share <- output %>% 
-  group_by(keyword,geo,week) %>% 
+  mutate(year=year(date)) %>% 
+  group_by(keyword,geo,week,year) %>% 
   mutate(weights=period_mean/mean(hits)) %>% 
   mutate(hits_aux=hits*weights) %>% 
   mutate(hits_corrected=100*hits_aux/max(hits_aux)) %>% 
@@ -184,8 +185,7 @@ week_share_join <- week_share_join %>%
 # le pego las muertes a la base
 
 base_final <- left_join(x=week_share_join,y=muertes,by=c("date","geo")) %>% 
-  mutate(death=ifelse(is.na(death),0,death)) %>%
-  mutate(year=year(date))
+  mutate(death=ifelse(is.na(death),0,death)) 
 
 
 
