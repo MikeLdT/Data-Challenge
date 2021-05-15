@@ -98,7 +98,7 @@ date <- c("2019-01-01 2019-04-10","2020-01-01 2020-04-10")
 output <- future_xmap_dfr(.l = list(kwlist,edos,date),
                   .f = ~ googleTrendsData(..1,..2,..3),
                   .progress = T, .options = furrr_options(seed = NULL)) %>% 
-  mutate(weekday=wday(as.Date(date)),week=week(as.Date(date)))
+  mutate(weekday=wday(as.Date(date)),week=week(as.Date(date)),year=year(as.Date(date)) )
   
  
 # Download the dataframe "output" as a .csv file 
@@ -138,7 +138,6 @@ output <- left_join(x=output,y=period_mean,by=c("keyword","geo"))
 # calculo el promedio por semana para los datos diarios por estado y palabra
 # luego hago los pesos y corrijo y reescalo los hits
 week_share <- output %>% 
-  mutate(year=year(date)) %>% 
   group_by(keyword,geo,week,year) %>% 
   mutate(weights=period_mean/mean(hits)) %>% 
   mutate(hits_aux=hits*weights) %>% 
