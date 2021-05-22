@@ -1,18 +1,35 @@
 ---
-title: "Your Document Title"
-author: "Document Author"
+title: "GEN Z, sin miedo a invertir"
+author: "Miguel Lerdo de Tejada, Anahí Plascencia, Alejandro Gómez, Alejandro Ortiz"
 date: "`r Sys.Date()`"
 output:
   prettydoc::html_pretty:
     theme: architect
     highlight: github
 ---
+<style>
+#TOC {
+  color:#708090
+  font-family: verdana;
+  font-size: 16px
+  border-color: #708090;
+}
+body {
+  color: #708090;
+  font-family: verdana;
+  background-color: #F5F5F5;
+}
+</style>
+
+# Cómo el COVID-19 ha sido un impulso para que los más jóvenes inviertan
+La generación Z ha demostrado que nunca es demasiado pronto para empezar a invertir, desde que comenzó la pandemia en marzo de 2020 muchos jóvenes al rededor del mundo han decidido tomar las riendas de sus finanzas personales. Muchos quizá por aburrimiento, y otros por la frustración de lo que está pasando con la economía mundial han decidido intentarlo y los resultados han sido bastante interesantes. 
+
+La facilidad con la que uno puede comprar acciones con un simple swipe a la izquierda es fascinante. El mundo digital ha venido a revolucionar los mercados y la Gen Z no perderá ninguna oportunidad para hacerlo desde casa. 
+
+Por esta razón hemos decidido analizar los efectos del lockdown en Estados Unidos para descubrir si existe un efecto causal en la búsqueda de palabras relacionadas al mercado accionario utilizando Google Trends. Buscamos probar que debido a los confinamientos el número de búsquedas relacionadas con inversiones han aumentado. 
+
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-
-
-rm(list = ls())
 
 library("dplyr")
 library("ggplot2")
@@ -30,6 +47,7 @@ library(future)
 library(rdrobust)
 library(fastDummies)
 library(rddensity)
+
 ```
 
 ```{r}
@@ -44,7 +62,8 @@ edos <- countries %>%
   head(51)
 
 # Load your keywords list (.csv file) 
-kwlist <- readLines("palabras.csv")
+#cat("\n", file= file.choose(), append = TRUE)
+kwlist <- readLines("palabras2.csv")
 
 #cargo las fechas de lockdown y les pego el identificador de cada edo
 fechas <- read.csv("fechasperronas.csv")
@@ -68,7 +87,11 @@ muertes <- read.csv("all-states-history.csv") %>%
 
 ```
 
+
 ```{r bajarPalabras, eval=F, cache=TRUE}
+
+
+kwlist <- kwlist[! kwlist==""]
 
  
 # The function wrap all the arguments of the gtrendR::trends function and return only the interest_over_time (you can change that)
@@ -86,7 +109,7 @@ googleTrendsData <- function (keywords,country,time) {
                    time = time,
                    category=7) 
     
-  Sys.sleep(3)
+  Sys.sleep(7)
   
   results <- trends$interest_over_time 
   results$hits <- as.character(results$hits)
@@ -99,12 +122,12 @@ date <- c("2019-01-01 2019-04-10","2020-01-01 2020-04-10")
 
 output <- future_xmap_dfr(.l = list(kwlist,edos,date),
                   .f = ~ googleTrendsData(..1,..2,..3),
-                  .progress = T, .options = furrr_options(seed = NULL)) %>% 
-  mutate(weekday=wday(as.Date(date)),week=week(as.Date(date)),year=year(as.Date(date)) )
+                  .progress = T, .options = furrr_options(seed=NULL)) %>% 
+  mutate(weekday=wday(as.Date(date)),week=week(as.Date(date)))
   
  
 # Download the dataframe "output" as a .csv file 
-write.csv(output, "download_diarias.csv")
+write.csv(output, "download_diarias1.csv")
 
 date <- c("2019-01-01 2020-04-10")
 
@@ -112,15 +135,19 @@ date <- c("2019-01-01 2020-04-10")
 # and the weekday and week variables are created
 output_week <- future_xmap_dfr(.l = list(kwlist, edos,date),
                   .f = ~ googleTrendsData(..1,..2,..3),
-                  .progress = T) 
+                  .progress = T,.options = furrr_options(seed=NULL)) 
  
 # Download the dataframe "output" as a .csv file 
-write.csv(output_week, "download_semanal.csv")
+write.csv(output_week, "download_semanal1.csv")
 ```
 
 ```{r rescaling}
-output <- read.csv("download_diarias.csv") 
-output_week <- read.csv("download_semanal.csv")
+output <- read.csv("download_diarias.csv") %>% 
+  mutate(year=year(date))
+output_week <- read.csv("download_semanal.csv") %>% 
+  mutate(year=year(date))
+
+
 
 #convierto los hits de character a numeric
 output$hits <- as.numeric(output$hits)
@@ -187,7 +214,10 @@ week_share_join <- week_share_join %>%
 # le pego las muertes a la base
 
 base_final <- left_join(x=week_share_join,y=muertes,by=c("date","geo")) %>% 
-  mutate(death=ifelse(is.na(death),0,death)) 
+  mutate(death=ifelse(is.na(death),0,death)) %>%
+  mutate(year=year(date))
+
+
 
 
 
