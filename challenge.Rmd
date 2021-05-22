@@ -1,18 +1,34 @@
 ---
-title: "Your Document Title"
-author: "Document Author"
+title: "GEN Z, sin miedo a invertir"
+author: "Miguel Lerdo de Tejada, Anahí Plascencia, Alejandro Gómez, Alejandro Ortiz"
 date: "`r Sys.Date()`"
 output:
   prettydoc::html_pretty:
     theme: architect
     highlight: github
 ---
+<style>
+#TOC {
+  color:#708090
+  font-family: verdana;
+  font-size: 16px
+  border-color: #708090;
+}
+body {
+  color: #708090;
+  font-family: verdana;
+  background-color: #F5F5F5;
+}
+</style>
+# Cómo el COVID-19 ha sido un impulso para que los más jóvenes inviertan
+La generación Z ha demostrado que nunca es demasiado pronto para empezar a invertir, desde que comenzó la pandemia en marzo de 2020 muchos jóvenes al rededor del mundo han decidido tomar las riendas de sus finanzas personales. Muchos quizá por aburrimiento, y otros por la frustración de lo que está pasando con la economía mundial han decidido intentarlo y los resultados han sido bastante interesantes. 
+
+La facilidad con la que uno puede comprar acciones con un simple swipe a la izquierda es fascinante. El mundo digital ha venido a revolucionar los mercados y la Gen Z no perderá ninguna oportunidad para hacerlo desde casa. 
+
+Por esta razón hemos decidido analizar los efectos del lockdown en Estados Unidos para descubrir si existe un efecto causal en la búsqueda de palabras relacionadas al mercado accionario utilizando Google Trends. Buscamos probar que debido a los confinamientos el número de búsquedas relacionadas con inversiones han aumentado. 
+
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-
-
-rm(list = ls())
 
 library("dplyr")
 library("ggplot2")
@@ -27,8 +43,9 @@ library(lubridate)
 library(fixest)
 library(naniar)
 library(future)
-install.packages("furrr")
 library("furrr")
+options(repos="https://cran.rstudio.com" )
+install.packages("pscl", repos = "https://cran.rstudio.com")
 ```
 
 ```{r}
@@ -195,7 +212,7 @@ base_final <- left_join(x=week_share_join,y=muertes,by=c("date","geo")) %>%
 
 
 
-output2
+
 
 ```
 
