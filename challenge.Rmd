@@ -44,7 +44,7 @@ edos <- countries %>%
 
 # Load your keywords list (.csv file) 
 #cat("\n", file= file.choose(), append = TRUE)
-kwlist <- readLines("palabras1.csv")
+kwlist <- readLines("palabras2.csv")
 
 #cargo las fechas de lockdown y les pego el identificador de cada edo
 fechas <- read.csv("fechasperronas.csv")
