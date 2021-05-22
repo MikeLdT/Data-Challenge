@@ -104,7 +104,7 @@ output <- future_xmap_dfr(.l = list(kwlist,edos,date),
   
  
 # Download the dataframe "output" as a .csv file 
-write.csv(output, "download_diarias.csv")
+write.csv(output, "download_diarias1.csv")
 
 date <- c("2019-01-01 2020-04-10")
 
@@ -112,10 +112,10 @@ date <- c("2019-01-01 2020-04-10")
 # and the weekday and week variables are created
 output_week <- future_xmap_dfr(.l = list(kwlist, edos,date),
                   .f = ~ googleTrendsData(..1,..2,..3),
-                  .progress = T) 
+                  .progress = T,.options = furrr_options(seed=NULL)) 
  
 # Download the dataframe "output" as a .csv file 
-write.csv(output_week, "download_semanal.csv")
+write.csv(output_week, "download_semanal1.csv")
 ```
 
 ```{r rescaling}
