@@ -27,7 +27,8 @@ library(lubridate)
 library(fixest)
 library(naniar)
 library(future)
-
+install.packages("furrr")
+library("furrr")
 ```
 
 ```{r}
@@ -42,7 +43,8 @@ edos <- countries %>%
   head(51)
 
 # Load your keywords list (.csv file) 
-kwlist <- readLines("palabras.csv")
+#cat("\n", file= file.choose(), append = TRUE)
+kwlist <- readLines("palabras1.csv")
 
 #cargo las fechas de lockdown y les pego el identificador de cada edo
 fechas <- read.csv("fechasperronas.csv")
@@ -67,7 +69,7 @@ muertes <- read.csv("all-states-history.csv") %>%
 ```
 
 ```{r bajarPalabras, eval=F}
-
+kwlist <- kwlist[! kwlist==""]
  
 # The function wrap all the arguments of the gtrendR::trends function and return only the interest_over_time (you can change that)
 googleTrendsData <- function (keywords,country,time) { 
@@ -84,7 +86,7 @@ googleTrendsData <- function (keywords,country,time) {
                    time = time,
                    category=7) 
     
-  Sys.sleep(3)
+  Sys.sleep(7)
   
   results <- trends$interest_over_time 
   results$hits <- as.character(results$hits)
@@ -97,7 +99,7 @@ date <- c("2019-01-01 2019-04-10","2020-01-01 2020-04-10")
 
 output <- future_xmap_dfr(.l = list(kwlist,edos,date),
                   .f = ~ googleTrendsData(..1,..2,..3),
-                  .progress = T) %>% 
+                  .progress = T, .options = furrr_options(seed=NULL)) %>% 
   mutate(weekday=wday(as.Date(date)),week=week(as.Date(date)))
   
  
