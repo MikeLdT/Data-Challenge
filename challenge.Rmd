@@ -119,8 +119,12 @@ write.csv(output_week, "download_semanal1.csv")
 ```
 
 ```{r rescaling}
-output <- read.csv("download_diarias.csv") 
-output_week <- read.csv("download_semanal.csv")
+output <- read.csv("download_diarias.csv") %>% 
+  mutate(year=year(date))
+output_week <- read.csv("download_semanal.csv") %>% 
+  mutate(year=year(date))
+
+
 
 #convierto los hits de character a numeric
 output$hits <- as.numeric(output$hits)
@@ -140,7 +144,7 @@ output <- left_join(x=output,y=period_mean,by=c("keyword","geo"))
 # calculo el promedio por semana para los datos diarios por estado y palabra
 # luego hago los pesos y corrijo y reescalo los hits
 week_share <- output %>% 
-  group_by(keyword,geo,week) %>% 
+  group_by(keyword,geo,week,year) %>% 
   mutate(weights=period_mean/mean(hits)) %>% 
   mutate(hits_aux=hits*weights) %>% 
   mutate(hits_corrected=100*hits_aux/max(hits_aux)) %>% 
@@ -190,6 +194,8 @@ base_final <- left_join(x=week_share_join,y=muertes,by=c("date","geo")) %>%
   mutate(year=year(date))
 
 
+
+output2
 
 ```
 
