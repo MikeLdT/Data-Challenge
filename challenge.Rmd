@@ -27,7 +27,9 @@ library(lubridate)
 library(fixest)
 library(naniar)
 library(future)
-
+library(rdrobust)
+library(fastDummies)
+library(rddensity)
 ```
 
 ```{r}
@@ -66,7 +68,7 @@ muertes <- read.csv("all-states-history.csv") %>%
 
 ```
 
-```{r bajarPalabras, eval=F}
+```{r bajarPalabras, eval=F, cache=TRUE}
 
  
 # The function wrap all the arguments of the gtrendR::trends function and return only the interest_over_time (you can change that)
@@ -138,6 +140,7 @@ output <- left_join(x=output,y=period_mean,by=c("keyword","geo"))
 # calculo el promedio por semana para los datos diarios por estado y palabra
 # luego hago los pesos y corrijo y reescalo los hits
 week_share <- output %>% 
+  mutate(year=year(date)) %>% 
   group_by(keyword,geo,week,year) %>% 
   mutate(weights=period_mean/mean(hits)) %>% 
   mutate(hits_aux=hits*weights) %>% 
@@ -209,7 +212,29 @@ a <- etable(difs[1],tex = F)
 kable(a,format = "html")
 ```
 
-```{r}
+```{r rdd}
+#plot
+base_final_rdd <- base_final %>% 
+  filter(!is.na(Lockdown.announced)) %>% 
+  mutate(duration=as.integer(date-Lockdown.announced))
+
+stock_2020 <- base_final_rdd %>% 
+  filter(keyword=="stock",year==2020) %>% 
+  dummy_cols(c("weekday","geo"),remove_first_dummy = T)
+
+covs <- cbind.data.frame(stock_2020$death,
+                         stock_2020[,(ncol(base_final)+1):ncol(stock_2020)])
+
+b <- rdplot(y=stock_2020$hits_corrected,x=stock_2020$duration,c=0,p=10,x.lim = c(-30,20),covs = covs)
+
+a <- rdrobust(y=stock_2020$hits_corrected,x=stock_2020$duration,c=0,p=3,covs=covs)
+
+rdd <- rddensity(X=stock_2020$duration)
+rdplotdensity(rdd,X=stock_2020$duration)
+#
+
+ggplot(stock_2020,aes(x=duration))+
+  geom_histogram()
 
 ```
 
