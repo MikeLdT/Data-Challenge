@@ -29,12 +29,10 @@ La facilidad con la que uno puede comprar acciones con un simple swipe a la izqu
 Por esta razón hemos decidido analizar los efectos del lockdown en Estados Unidos para descubrir si existe un efecto causal en la búsqueda de palabras relacionadas al mercado accionario utilizando Google Trends. Buscamos probar que debido a los confinamientos el número de búsquedas relacionadas con inversiones han aumentado. 
 
 
-```{r setup, include=FALSE}
-
+```{r, echo=FALSE}
+knitr::opts_chunk$set(error = TRUE)
 library("dplyr")
 library("ggplot2")
-library("knitr")
-library("rmarkdown")
 library("corrplot")
 library("gtrendsR")
 library(readr) 
@@ -47,11 +45,71 @@ library(future)
 library(rdrobust)
 library(fastDummies)
 library(rddensity)
-
+library("rmarkdown")
+library("naniar")
+library("knitr")
+library("furrr")
+options(repos="https://cran.rstudio.com" )
+install.packages("pscl", repos = "https://cran.rstudio.com") 
 ```
 Los resultados que obtuvimos se estimaron a través del método de Diferencias en Diferencias (DiD) que compara las búsquedas relacionadas con finanzas en el 2020 antes y después de los lockdowns con las búsquedas en las mismas fechas en el 2019. Los datos que se tomaron fueron para los 51 estados de Estados Unidos y la selección de palabras de términos de búsqueda relacionadas a la categoría de finanzas en Google Trends fueron las siguientes: Stock, Stocks, Market, NYSE, Finance, Finances, Dow, NASDAQ, Business, Rate, Rates y S&P. Los datos de búsqueda por cada término se registraron diariamente para cada estado en ambos periodos de tiempo. 
 
 De acuerdo con los resultados encontrados nos podemos dar cuenta que a partir de la pandemia la gente empezó a tener un interés por las finanzas que se ve reflejado en como los términos de búsqueda aumentaron a partir del lockdown. (Incluir los datos en términos de desviaciones). En el estado de blah se vio un aumento de ... desviaciones estándar. Tal término aumentó --- veces. Mencionar qué pasó con los términos más relevantes y cómo aumentó su búsqueda por el lockdown. 
+Para obtener las tendencias de búsqueda diarias entre el 1 de enero de 2019 y el 10 de abril de 2020, descargamos los datos diarios entre el 1 de enero y el 10 de abril, tanto en 2019 como en 2020. Como los datos diarios en 2019 provienen de una solicitud separada a los datos diarios en 2020, los factores de escala utilizados para calcular la puntuación de 0 a 100 no son los mismos en los dos períodos. Por lo tanto, cambiamos la escala de las dos series para que sean comparables.
+
+Prodecimiento de escala:
+
+Denotemos con Di, c, 2019 el número de búsquedas diarias en Google de un tema el día i en el país c, durante el período del 1 de enero de 2019 al 10 de abril de 2019, con un número análogo Di, c, 2020 para el período del 1 de enero de 2020 al 10 de abril de 2020. Estos datos se obtienen para cada día individual i y toman valores entre 0 y 100 para cada día durante el período considerado. Sin embargo, no se puede comparar directamente los números de 2019 y 2020 ya que su denominador (el número máximo de búsquedas durante un día en el período) no es el mismo. Para poder comparar estas cifras, cambiamos la escala de los datos diarios para cada período por las respectivas ponderaciones de interés de búsqueda de la semana que calculamos utilizando datos semanales que están disponibles continuamente durante todo el período entre el 1 de enero de 2019 y el 10 de abril de 2020.
+
+Denotemos por Di, c, 2019-2020 el número reescalado de búsquedas diarias en Google para este tema el día i en el país c durante el período del 1 de enero de 2019 al 10 de abril de 2020. Este factor lo calculamos de la siguiente manera:
+
+Primero calculamos los respectivos niveles de busqueda semanal de los temas de nuestro interés para todas las semanas entre el 1 de enero de 2019 y el 10 de abril de 2020. Tomamos los datos diarios desde el 1 de enero de 2019 hasta el 10 de abril de 2019 y calculamos el promedio de búsquedas semanales para cada tema en el país c sobre este período y lo denotamos “Di, c, 2019”. Luego realizamos el mismo ejercicio para el período del 1 de enero de 2020 al 10 de abril de 2020 y lo denotamos:  “Di, c, 2020”.
+De igual manera sacamos el promedio del nivel de busqueda de cada tema para todo el period (es decir, desde el 1 de enero de 2019 hasta el 10 de abril de 2020), tambiénlo denotamos: “Di, c, 2019-2020”. 
+
+De lo anterior poderamos el nivel de las busquedas semanales, wc2019 y wc2020:
+
+ 
+
+Con estas ponderaciones ahora podemos cambiar la escala de los datos diarios para cada período multiplicando “Di, c, 2019” por wc2019 en 2019 y “Di, c, 2020” por wc2020 en 2020.
+Obtenemos:
+
+ 
+
+Por último, normalizamos estas cifras para obtener cifras entre 0 y 100 remplazando Di,c,2019−2020 por:
+
+
+ 
+
+
+Selección de la muestra:
+
+
+Utilizamos la informsción que Google Trends nos proporciona sobre el historial de busqueda de las personas en Estados Unidos, no solo porque fue uno de los paises que con mayor rapidez impusieron restricciones de confinamiento, sino también porque la cultura de la inversión digital en la bolsa de valores es mucho más común, porque una major cantidad de personas tienen acceso a internet. De esta manera suavizamos un poco el sesgo que podría existir en nuestra muestra por la exlusión de personas que no tienen acceso a internet para nuestro ejercicio. Este sesgo es una de las desventajas que tiene utilizar Google Trends como fuente de datos, asi como el sesgo por edades, porque es mucho más común que la gente joven utilice internet para buscar maneras de invertir en la bolsa, mientras la gente de edad lo puede hacer por otro medio. Esto podría excluir de nuestro ejercicio a muchas personas mayores.
+
+Sin embargo, utilizar Google Trends en nuestro trabajo tiene tambien ventajas; primero, las muestras que obtenemos son grandes, por lo que se elimina el sesgo por muestras pequeñas. Segundo, no adolece de sesgos como el efecto expectativa del observador o el sesgo del entrevistador, porque los usuarios no tienen incentivos a mentir en sus busquedas privadas. Y tercero, no hay una submuestra de entrevistado, por lo que no participa en nuestro ejercicio gente auto informada.
+
+Método:
+
+Para estimar los efectos del bloqueo en las búsquedas relacionadas con el la inversión en la bolsa, nos basamos en una estimación de Diferencia en Diferencia (DiD) que compara las búsquedas antes y después del bloqueo en 2020 con las búsquedas anteriores y posteriores a la misma fecha en 2019, esto garantiza que los cambios estacionales no afectan nuestro ejercicio porque comparamos las mismas fechas, en diferentes años. 
+
+Escribimos el modelo de regresión de diferencias en diferencias para un tema W como:
+
+ 
+
+Donde α refleja el efecto del bloqueo en las búsquedas de Google para el tema Wi, c en el día i en el país c. Ti,c es una variable dummy que toma el valor uno en los días posteriores a que se anunció el confinamiento y es cero en fechas anteriores. El año del bloqueo es el año i y corresponde a 2020. La variable Xi − 1, c controla el número  de nuevas muertes por COVID-19 por día por cada millón de habitantes en el país c. El modelo incluye efectos fijos del país, ρc, así como efectos fijos de año, semana y día que aparecen en el vector µ. 
+
+Los errores estándar son sólidos y están agrupados a nivel de día. La suposición clave en nuestro ejercicio es que, en ausencia del confinamiento, el comportamiento de los usuarios de Google habrían evolucionado de la misma manera que en el año anterior al bloqueo, es decir, una suposición de tendencia común.
+
+
+Estimadores RDD (Regresión discontinua)
+
+Para mostrar que hay una ruptura estructural inmediata causada por el confinamiento en las tendencias de busqueda de inversiones en la bolsa, también utilizaremos un diseño de regresión discontinua (RDD), que identifica rupturas en dos series paramétricas estimadas antes y después del confinamiento. Al igual que con las estimaciones de DiD, comparamos estas rupturas con las estimadas durante el mismo período en 2019.
+
+Sea D la variable de ejecución, que se define como la distancia absoluta en días desde el anuncio de la orden de confinamienro; es negativo para los días anteriores y positivo para los días posteriores, mientras que la fecha del anuncio real o contrafactual se establece como día cero. El anuncio de bloqueo Ti,c se define como ya lo habíamos definido anteriormente. Por lo tanto, el modelo RDD-DiD se puede escribir de la siguiente manera:
+ 
+
+Donde α' refleja el efecto que causó el confinamiento en las búsquedas de Google del tema Wi, c en el día i en el país c. f (Di, c) es una función polinomial de la distancia en días desde el anuncio del confinamiento que interactuó con la variable dummy de bloqueo Ti,c, para permitir diferentes efectos en ambos lados de las regresiones (antes y después).  Además, se incluyeron los mismos controles que en los modelos DID.
+
 ```{r}
 #cargo los ids de los estados y DC
 data("countries")
