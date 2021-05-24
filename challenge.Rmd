@@ -20,6 +20,7 @@ body {
   background-color: #F5F5F5;
 }
 </style>
+
 # Cómo el COVID-19 ha sido un impulso para que los más jóvenes inviertan
 La generación Z ha demostrado que nunca es demasiado pronto para empezar a invertir, desde que comenzó la pandemia en marzo de 2020 muchos jóvenes al rededor del mundo han decidido tomar las riendas de sus finanzas personales. Muchos quizá por aburrimiento, y otros por la frustración de lo que está pasando con la economía mundial han decidido intentarlo y los resultados han sido bastante interesantes. 
 
@@ -43,9 +44,10 @@ library(lubridate)
 library(fixest)
 library(naniar)
 library(future)
-library("furrr")
-options(repos="https://cran.rstudio.com" )
-install.packages("pscl", repos = "https://cran.rstudio.com")
+library(rdrobust)
+library(fastDummies)
+library(rddensity)
+
 ```
 Los resultados que obtuvimos se estimaron a través del método de Diferencias en Diferencias (DiD) que compara las búsquedas relacionadas con finanzas en el 2020 antes y después de los lockdowns con las búsquedas en las mismas fechas en el 2019. Los datos que se tomaron fueron para los 51 estados de Estados Unidos y la selección de palabras de términos de búsqueda relacionadas a la categoría de finanzas en Google Trends fueron las siguientes: Stock, Stocks, Market, NYSE, Finance, Finances, Dow, NASDAQ, Business, Rate, Rates y S&P. Los datos de búsqueda por cada término se registraron diariamente para cada estado en ambos periodos de tiempo. 
 
@@ -87,8 +89,12 @@ muertes <- read.csv("all-states-history.csv") %>%
 
 ```
 
-```{r bajarPalabras, eval=F}
+
+```{r bajarPalabras, eval=F, cache=TRUE}
+
+
 kwlist <- kwlist[! kwlist==""]
+
  
 # The function wrap all the arguments of the gtrendR::trends function and return only the interest_over_time (you can change that)
 googleTrendsData <- function (keywords,country,time) { 
@@ -163,6 +169,7 @@ output <- left_join(x=output,y=period_mean,by=c("keyword","geo"))
 # calculo el promedio por semana para los datos diarios por estado y palabra
 # luego hago los pesos y corrijo y reescalo los hits
 week_share <- output %>% 
+  mutate(year=year(date)) %>% 
   group_by(keyword,geo,week,year) %>% 
   mutate(weights=period_mean/mean(hits)) %>% 
   mutate(hits_aux=hits*weights) %>% 
@@ -237,7 +244,29 @@ a <- etable(difs[1],tex = F)
 kable(a,format = "html")
 ```
 
-```{r}
+```{r rdd}
+#plot
+base_final_rdd <- base_final %>% 
+  filter(!is.na(Lockdown.announced)) %>% 
+  mutate(duration=as.integer(date-Lockdown.announced))
+
+stock_2020 <- base_final_rdd %>% 
+  filter(keyword=="stock",year==2020) %>% 
+  dummy_cols(c("weekday","geo"),remove_first_dummy = T)
+
+covs <- cbind.data.frame(stock_2020$death,
+                         stock_2020[,(ncol(base_final)+1):ncol(stock_2020)])
+
+b <- rdplot(y=stock_2020$hits_corrected,x=stock_2020$duration,c=0,p=10,x.lim = c(-30,20),covs = covs)
+
+a <- rdrobust(y=stock_2020$hits_corrected,x=stock_2020$duration,c=0,p=3,covs=covs)
+
+rdd <- rddensity(X=stock_2020$duration)
+rdplotdensity(rdd,X=stock_2020$duration)
+#
+
+ggplot(stock_2020,aes(x=duration))+
+  geom_histogram()
 
 ```
 
