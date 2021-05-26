@@ -8,6 +8,9 @@ output:
     highlight: github
 ---
 <style>
+body {
+text-align: justify}
+
 #TOC {
   color:#708090
   font-family: verdana;
