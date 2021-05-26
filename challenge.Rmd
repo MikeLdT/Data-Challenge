@@ -52,6 +52,7 @@ library("rmarkdown")
 library("naniar")
 library("knitr")
 library("furrr")
+library("prettydoc")
 options(repos="https://cran.rstudio.com" )
 install.packages("pscl", repos = "https://cran.rstudio.com") 
 ```
@@ -60,7 +61,7 @@ Los resultados que obtuvimos se estimaron a través del método de Diferencias e
 De acuerdo con los resultados encontrados nos podemos dar cuenta que a partir de la pandemia la gente empezó a tener un interés por las finanzas que se ve reflejado en como los términos de búsqueda aumentaron a partir del lockdown. (Incluir los datos en términos de desviaciones). En el estado de blah se vio un aumento de ... desviaciones estándar. Tal término aumentó --- veces. Mencionar qué pasó con los términos más relevantes y cómo aumentó su búsqueda por el lockdown. 
 Para obtener las tendencias de búsqueda diarias entre el 1 de enero de 2019 y el 10 de abril de 2020, descargamos los datos diarios entre el 1 de enero y el 10 de abril, tanto en 2019 como en 2020. Como los datos diarios en 2019 provienen de una solicitud separada a los datos diarios en 2020, los factores de escala utilizados para calcular la puntuación de 0 a 100 no son los mismos en los dos períodos. Por lo tanto, cambiamos la escala de las dos series para que sean comparables.
 
-Prodecimiento de escala:
+##Prodecimiento de escala:
 
 Denotemos con Di, c, 2019 el número de búsquedas diarias en Google de un tema el día i en el país c, durante el período del 1 de enero de 2019 al 10 de abril de 2019, con un número análogo Di, c, 2020 para el período del 1 de enero de 2020 al 10 de abril de 2020. Estos datos se obtienen para cada día individual i y toman valores entre 0 y 100 para cada día durante el período considerado. Sin embargo, no se puede comparar directamente los números de 2019 y 2020 ya que su denominador (el número máximo de búsquedas durante un día en el período) no es el mismo. Para poder comparar estas cifras, cambiamos la escala de los datos diarios para cada período por las respectivas ponderaciones de interés de búsqueda de la semana que calculamos utilizando datos semanales que están disponibles continuamente durante todo el período entre el 1 de enero de 2019 y el 10 de abril de 2020.
 
@@ -84,7 +85,7 @@ Por último, normalizamos estas cifras para obtener cifras entre 0 y 100 remplaz
  
 
 
-Selección de la muestra:
+##Selección de la muestra:
 
 
 Utilizamos la informsción que Google Trends nos proporciona sobre el historial de busqueda de las personas en Estados Unidos, no solo porque fue uno de los paises que con mayor rapidez impusieron restricciones de confinamiento, sino también porque la cultura de la inversión digital en la bolsa de valores es mucho más común, porque una major cantidad de personas tienen acceso a internet. De esta manera suavizamos un poco el sesgo que podría existir en nuestra muestra por la exlusión de personas que no tienen acceso a internet para nuestro ejercicio. Este sesgo es una de las desventajas que tiene utilizar Google Trends como fuente de datos, asi como el sesgo por edades, porque es mucho más común que la gente joven utilice internet para buscar maneras de invertir en la bolsa, mientras la gente de edad lo puede hacer por otro medio. Esto podría excluir de nuestro ejercicio a muchas personas mayores.
@@ -104,7 +105,7 @@ Donde α refleja el efecto del bloqueo en las búsquedas de Google para el tema 
 Los errores estándar son sólidos y están agrupados a nivel de día. La suposición clave en nuestro ejercicio es que, en ausencia del confinamiento, el comportamiento de los usuarios de Google habrían evolucionado de la misma manera que en el año anterior al bloqueo, es decir, una suposición de tendencia común.
 
 
-Estimadores RDD (Regresión discontinua)
+##Estimadores RDD (Regresión discontinua)
 
 Para mostrar que hay una ruptura estructural inmediata causada por el confinamiento en las tendencias de busqueda de inversiones en la bolsa, también utilizaremos un diseño de regresión discontinua (RDD), que identifica rupturas en dos series paramétricas estimadas antes y después del confinamiento. Al igual que con las estimaciones de DiD, comparamos estas rupturas con las estimadas durante el mismo período en 2019.
 
