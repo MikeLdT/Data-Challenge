@@ -47,7 +47,9 @@ library(future)
 library(rdrobust)
 library(fastDummies)
 library(rddensity)
-
+library(ggstatsplot)
+library(Seurat)
+library(gridExtra)
 ```
 
 ```{r}
@@ -63,7 +65,7 @@ edos <- countries %>%
 
 # Load your keywords list (.csv file) 
 #cat("\n", file= file.choose(), append = TRUE)
-kwlist <- readLines("palabras2.csv")
+kwlist <- readLines("palabras.csv")
 
 #cargo las fechas de lockdown y les pego el identificador de cada edo
 fechas <- read.csv("fechasperronas.csv")
@@ -84,6 +86,17 @@ muertes <- read.csv("all-states-history.csv") %>%
   select(date,state,death) %>% 
   mutate(state=paste0("US-",state),date=as.Date(date)+1) %>% 
   rename(geo=state)
+
+#poblacion
+pob <- read.csv("population2019.csv") %>% 
+  mutate(Population=as.numeric(gsub(",","",Population)))
+pob$States <- toupper(pob$States)
+pob <- pob %>% 
+  rename(name=States) %>% 
+  filter(!is.na(Population)) %>% 
+  left_join(x=.,y=counts,by=c("name")) %>% 
+  rename(geo=sub_code) %>% 
+  select(geo,Population)
 
 ```
 
@@ -211,11 +224,18 @@ week_share_join <- week_share_join %>%
 
 ```{r muertes}
 
-# le pego las muertes a la base
+# le pego las muertes y la poblacion a la base
 
 base_final <- left_join(x=week_share_join,y=muertes,by=c("date","geo")) %>% 
   mutate(death=ifelse(is.na(death),0,death)) %>%
-  mutate(year=year(date))
+  mutate(year=year(date)) %>% 
+  left_join(x=.,y=pob,by=c("geo")) %>% 
+  group_by(date,keyword) %>% 
+  mutate(sumPop=sum(Population)) %>% 
+  ungroup() %>% 
+  mutate(weightsPop=Population/sumPop)
+  
+  
 
 
 
@@ -225,15 +245,44 @@ base_final <- left_join(x=week_share_join,y=muertes,by=c("date","geo")) %>%
 
 
 ```{r dif}
+#base_final <- read.csv("base_final.csv")
 
 #corro el dif in dif para cada palabra de la lista
 
 difs <- map(kwlist,function(x){
-  feols(hits_corrected ~ death + i(treat_announced,year,2019) | weekday + geo + week + year,filter(base_final,keyword==x),cluster=~date)
+  feols(hits_corrected ~ death + i(treat_announced,year,2019) | weekday + geo + week + year,filter(base_final,keyword==x),cluster=~date,weights = ~weightsPop)
 }
   )
 
+coefs <- map(1:12,
+             ~unlist(coef(difs[[.]])[2])
+  
+)
 
+fixest::coefplot(difs[12])
+
+plotlist <- map(1:12,
+                function(x){
+                  
+                  ggcoefstats(difs[[x]],title=kwlist[x],exclude.intercept = T,conf.level = 0.9)
+                  
+                })
+
+plotlist[[12]]
+
+png(filename="pruebaComb.png")
+combine_plots(
+  plotlist = plotlist[1:6] ,
+  labels = "auto",
+  annotation.args = list(title = "Efecto del lockdown")
+)
+
+dev.off()
+plotlist[[12]]
+
+a <- grid.arrange(grobs = plotlist[1:4])
+
+ggcoefstats(difs[[12]],.name_repair="dif")
 ```
 
 
@@ -265,6 +314,7 @@ rdplotdensity(rdd,X=stock_2020$duration)
 
 ggplot(stock_2020,aes(x=duration))+
   geom_histogram()
+
 
 ```
 
