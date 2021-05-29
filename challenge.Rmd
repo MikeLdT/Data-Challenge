@@ -316,6 +316,7 @@ base_final <- left_join(x=week_share_join,y=muertes,by=c("date","geo")) %>%
 
 
 ```
+## Resultados del _DiD_
 
 
 ```{r dif,echo=FALSE, message=FALSE, warning=FALSE, error=FALSE}
@@ -364,6 +365,7 @@ ggcoefstats(difs[[12]],.name_repair="dif")
 a <- etable(difs[1],tex = F)
 kable(a,format = "html")
 ```
+
 
 ```{r rdd,echo=FALSE, message=FALSE, warning=FALSE, error=FALSE}
 #plot
