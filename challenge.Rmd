@@ -35,6 +35,10 @@ La facilidad con la que uno puede comprar acciones con un simple swipe a la izqu
 
 Por esta razón hemos decidido analizar los efectos del lockdown en Estados Unidos para descubrir si existe un efecto causal en la tendencia de búsqueda de palabras relacionadas al mercado accionario utilizando Google Trends. Buscamos probar que debido a los confinamientos el número de búsquedas relacionadas con inversiones han aumentado. 
 
+```{r, echo=F}
+options(repos="https://cran.rstudio.com" )
+
+```
 
 
 ```{r, echo=FALSE, message=FALSE, warning=FALSE, error=FALSE}
@@ -56,14 +60,12 @@ library(rddensity)
 library(ggstatsplot)
 library(Seurat)
 library(gridExtra)
-
 library("rmarkdown")
 library("naniar")
 library("knitr")
 library("furrr")
 library("prettydoc")
-options(repos="https://cran.rstudio.com" )
-install.packages("pscl", repos = "https://cran.rstudio.com") 
+library(kableExtra)
 
 ```
 Los resultados que obtuvimos se estimaron a través del método de Diferencias en Diferencias _(DiD)_ que compara las búsquedas relacionadas con finanzas en el 2020 antes y después de los lockdowns con las búsquedas en las mismas fechas en el 2019. Los datos que se tomaron fueron para los 51 estados de Estados Unidos y la selección de palabras de términos de búsqueda relacionadas a la categoría de finanzas en Google Trends fueron las siguientes: Stock, Stocks, Market, NYSE, Finance, Finances, Dow, NASDAQ, Business, Rate, Rates y S&P. Los datos de búsqueda por cada término se registraron diariamente para cada estado en ambos periodos de tiempo. 
@@ -347,7 +349,7 @@ plotlist[[12]]
 
 png(filename="pruebaComb.png")
 combine_plots(
-  plotlist = plotlist[1:6] ,
+  plotlist = plotlist[1:2] ,
   labels = "auto",
   annotation.args = list(title = "Efecto del lockdown")
 )
@@ -356,14 +358,32 @@ dev.off()
 plotlist[[12]]
 
 a <- grid.arrange(grobs = plotlist[1:4])
-
+a
 ggcoefstats(difs[[12]],.name_repair="dif")
 ```
 
 
 ```{r,results='asis', echo=FALSE, message=FALSE, warning=FALSE, error=FALSE}
-a <- etable(difs[1],tex = F)
+a <- etable(difs[1:6],tex = F,cluster= ~date,
+            digits = 2,drop = "death", depvar = F,dict=c(treat_announced="efecto",year="lockdown"),
+            extraline = list("_Weights by State" = 
+                          c("Yes", "Yes", "Yes", "Yes", "Yes", "Yes")))
+colnames(a) <- kwlist[1:6]
 kable(a,format = "html")
+```
+
+```{r,results='asis', echo=FALSE, message=FALSE, warning=FALSE, error=FALSE}
+a <- etable(difs[7:12],tex = F,cluster= ~date,
+            digits = 2,drop = "death", depvar = F,dict=c(treat_announced="efecto",year="lockdown"),
+            extraline = list("_Weights by State" = 
+                          c("Yes", "Yes", "Yes", "Yes", "Yes", "Yes")))
+colnames(a) <- kwlist[7:12]
+kable(a,format = "html")
+
+#mean(pull(select(filter(base_final,keyword=="nasdaq",year==2019),hits_corrected)))
+
+
+
 ```
 
 
