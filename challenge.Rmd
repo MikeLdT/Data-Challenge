@@ -6,35 +6,46 @@ output:
   prettydoc::html_pretty:
     theme: architect
     highlight: github
+    math: katex
 ---
 <style>
+body {
+text-align: justify}
+
 #TOC {
-  color:#708090
-  font-family: verdana;
+  font-family: brandon;
   font-size: 16px
-  border-color: #708090;
+  border-color: dodgerblue4
+  background: #c8e4f6 
+  color: #15025e 
+  font: brandon 
 }
 body {
-  color: #708090;
-  font-family: verdana;
-  background-color: #F5F5F5;
+  color: dodgerblue4
+  font-family: brandon;
+  background-color:gray94 ;
 }
+
 </style>
 
-# Cómo el COVID-19 ha sido un impulso para que los más jóvenes inviertan
+# El COVID-19 ha sido un impulso para que los más jóvenes inviertan
+
 La generación Z ha demostrado que nunca es demasiado pronto para empezar a invertir, desde que comenzó la pandemia en marzo de 2020 muchos jóvenes al rededor del mundo han decidido tomar las riendas de sus finanzas personales. Muchos quizá por aburrimiento, y otros por la frustración de lo que está pasando con la economía mundial han decidido intentarlo y los resultados han sido bastante interesantes. 
 
 La facilidad con la que uno puede comprar acciones con un simple swipe a la izquierda es fascinante. El mundo digital ha venido a revolucionar los mercados y la Gen Z no perderá ninguna oportunidad para hacerlo desde casa. 
 
-Por esta razón hemos decidido analizar los efectos del lockdown en Estados Unidos para descubrir si existe un efecto causal en la búsqueda de palabras relacionadas al mercado accionario utilizando Google Trends. Buscamos probar que debido a los confinamientos el número de búsquedas relacionadas con inversiones han aumentado. 
+Por esta razón hemos decidido analizar los efectos del lockdown en Estados Unidos para descubrir si existe un efecto causal en la tendencia de búsqueda de palabras relacionadas al mercado accionario utilizando Google Trends. Buscamos probar que debido a los confinamientos el número de búsquedas relacionadas con inversiones han aumentado. 
+
+```{r setup, include=F}
+#options(repos="https://cran.rstudio.com" )
+knitr::opts_chunk$set(echo = TRUE, comment = NA, message = FALSE)
+```
 
 
-```{r setup, include=FALSE}
+```{r, include=FALSE, message=FALSE, warning=FALSE, error=FALSE}
 
 library("dplyr")
 library("ggplot2")
-library("knitr")
-library("rmarkdown")
 library("corrplot")
 library("gtrendsR")
 library(readr) 
@@ -50,9 +61,76 @@ library(rddensity)
 library(ggstatsplot)
 library(Seurat)
 library(gridExtra)
-```
+library("rmarkdown")
+library("naniar")
+library("knitr")
+library("furrr")
+library("prettydoc")
+library(kableExtra)
 
-```{r}
+```
+Los resultados que obtuvimos se estimaron a través del método de Diferencias en Diferencias _(DiD)_ que compara las búsquedas relacionadas con finanzas en el 2020 antes y después de los lockdowns con las búsquedas en las mismas fechas en el 2019. Los datos que se tomaron fueron para los 51 estados de Estados Unidos y la selección de palabras de términos de búsqueda relacionadas a la categoría de finanzas en Google Trends fueron las siguientes: Stock, Stocks, Market, NYSE, Finance, Finances, Dow, NASDAQ, Business, Rate, Rates y S&P. Los datos de búsqueda por cada término se registraron diariamente para cada estado en ambos periodos de tiempo. 
+
+De acuerdo con los resultados encontrados nos podemos dar cuenta que a partir de la pandemia la gente empezó a tener un interés por las finanzas que se ve reflejado en como los términos de búsqueda aumentaron a partir del lockdown. (Incluir los datos en términos de desviaciones). En el estado de blah se vio un aumento de ... desviaciones estándar. Tal término aumentó --- veces. Mencionar qué pasó con los términos más relevantes y cómo aumentó su búsqueda por el lockdown. 
+
+Para obtener las tendencias de búsqueda diarias entre el 1 de enero de 2019 y el 10 de abril de 2020, descargamos los datos diarios entre el 1 de enero y el 10 de abril, tanto en 2019 como en 2020. Como los datos diarios en 2019 provienen de una solicitud separada a los datos diarios en 2020, los factores de escala utilizados para calcular la puntuación de 0 a 100 no son los mismos en los dos períodos. Por lo tanto, cambiamos la escala de las dos series para que sean comparables.
+
+## Procedimiento de escala:
+
+Denotemos con $D_{i,c,2019}$ el número de búsquedas diarias en Google de un tema el día $i$ en el estado $c$, durante el período del 1 de enero de 2019 al 10 de abril de 2019, con un número análogo $D_{i,c,2020}$ para el período del 1 de enero de 2020 al 10 de abril de 2020. Estos datos se obtienen para cada día individual $i$ y toman valores entre 0 y 100 para cada día durante el período considerado. Sin embargo, no se puede comparar directamente los números de 2019 y 2020 ya que su denominador (el número máximo de búsquedas durante un día en el período) no es el mismo. Para poder comparar estas cifras, cambiamos la escala de los datos diarios para cada período por las respectivas ponderaciones de interés de búsqueda de la semana que calculamos utilizando datos semanales que están disponibles continuamente durante todo el periodo entre el 1 de enero de 2019 y el 10 de abril de 2020.
+
+Denotemos por $D_{i,c,2019-2020}$ el número reescalado de búsquedas diarias en Google para este tema el día $i$ en el estado $c$ durante el período del 1 de enero de 2019 al 10 de abril de 2020. Este factor lo calculamos de la siguiente manera:
+
+Primero calculamos los respectivos niveles de busqueda semanal de los temas de nuestro interés para todas las semanas entre el 1 de enero de 2019 y el 10 de abril de 2020. Tomamos los datos diarios desde el 1 de enero de 2019 hasta el 10 de abril de 2019 y calculamos el promedio de búsquedas semanales para cada tema en el país $c$ sobre este periodo y lo denotamos $D_{i,c,2019}$. Luego realizamos el mismo ejercicio para el periodo del 1 de enero de 2020 al 10 de abril de 2020 y lo denotamos:  $D_{i,c,2020}$.
+De igual manera sacamos el promedio del nivel de busqueda de cada tema para todo el periodo (es decir, desde el 1 de enero de 2019 hasta el 10 de abril de 2020), también lo denotamos: $D_{i,c,2019-2020}$ 
+
+De lo anterior ponderamos el nivel de las búsquedas semanales, $w_{c,2019}$ y $w_{c,2020}$:
+$w_{c,2019}= \frac{\overline{D_{i,c,2019-2020}}}{D_{i,c,2019}}$ y $w_{c,2020}= \frac{\overline{D_{i,c,2019-2020}}}{D_{i,c,2020}}$
+ 
+
+Con estas ponderaciones ahora podemos cambiar la escala de los datos diarios para cada período multiplicando $D_{i,c,2019}$ por $w_{c,2019}$ en 2019 y $D_{i,c,2020}$ por $w_{c,2020}$ en 2020.
+Obtenemos:
+$$D_{i,c,2019-2020}=D_{i,c,2019}*\frac{\overline{D_{i,c,2019-2020}}}{D_{i,c,2019}}$$ para 2019
+$$D_{i,c,2019-2020}=D_{i,c,2020}*\frac{\overline{D_{i,c,2019-2020}}}{D_{i,c,2020}}$$ para 2020
+
+
+Por último, normalizamos estas cifras para obtener cifras entre 0 y 100 remplazando $D_{i,c,2019-2020}$ por:
+$$D_{i,c,2019-2020}=\frac{D_{i,c,2019-2020}}{max(D_{i,c,2019-2020})}*100$$
+
+ 
+
+
+## Selección de la muestra:
+
+
+Utilizamos la informsción que Google Trends nos proporciona sobre el historial de busqueda de las personas en Estados Unidos, no solo porque fue uno de los paises que con mayor rapidez impusieron restricciones de confinamiento, sino también porque la cultura de la inversión digital en la bolsa de valores es mucho más común, porque una mayor cantidad de personas tienen acceso a internet. De esta manera suavizamos un poco el sesgo que podría existir en nuestra muestra por la exclusión de personas que no tienen acceso a internet para nuestro ejercicio. Este sesgo es una de las desventajas que tiene utilizar Google Trends como fuente de datos, así como el sesgo por edades, porque es mucho más común que la gente joven utilice internet para buscar maneras de invertir en la bolsa, mientras la gente de edad lo puede hacer por otro medio. Esto podría excluir de nuestro ejercicio a muchas personas mayores.
+
+Sin embargo, utilizar Google Trends en nuestro trabajo tiene también ventajas; primero, las muestras que obtenemos son grandes, por lo que se elimina el sesgo por muestras pequeñas. Segundo, no adolece de sesgos como el efecto expectativa del observador o el sesgo del entrevistador, porque los usuarios no tienen incentivos a mentir en sus búsquedas privadas. Y tercero, no hay una submuestra de entrevistados, por lo que no participa en nuestro ejercicio gente auto informada.
+
+## Método:
+
+Para estimar los efectos del confinamiento en las búsquedas relacionadas con el sector financiero, nos basamos en una estimación de Diferencia en Diferencia (DiD) que compara las búsquedas antes y después de la cuarentena en 2020 con las búsquedas anteriores y posteriores a la misma fecha en 2019, esto garantiza que los cambios estacionales no afectan nuestro ejercicio porque comparamos las mismas fechas, en diferentes años. 
+
+Escribimos el modelo de regresión de diferencias en diferencias para un término $W$ como:
+$$W_{i,c}=\alpha T_{i,c}*Year_{i}+\beta T_{i,c}+\mu_{i}+\rho_{c}+\epsilon_{i,c}$$
+ 
+
+Donde $\alpha$ refleja el efecto del _lockdown_ en las búsquedas de Google para el término $W_{i, c}$ en el día $i$ en el estado $c$. $T_{i,c}$ es una variable dummy que toma el valor uno en los días posteriores a que se anunció el confinamiento y es cero en fechas anteriores. El año del _lockdown_ es el año $i$ y corresponde a 2020. La variable $X_{i-1,c}$ controla el número de nuevas muertes por COVID-19 por día por cada millón de habitantes en el estado $c$. El modelo incluye efectos fijos del estado, $\rho_{c}$, así como efectos fijos de año, semana y día que aparecen en el vector $\mu$. 
+
+Los errores estándar son sólidos y están agrupados a nivel de día. La suposición clave en nuestro ejercicio es que, en ausencia del confinamiento, el comportamiento de los usuarios de Google habría evolucionado de la misma manera que en el año anterior al _lockdown_, es decir, una suposición de tendencia común.
+
+
+## Estimadores RDD (Regresión discontinua)
+
+Para mostrar que hay una ruptura estructural inmediata causada por el confinamiento en las tendencias de búsqueda de inversiones, también utilizaremos el método de regresión discontinua (RDD), que identifica rupturas en dos series paramétricas estimadas antes y después del confinamiento. Al igual que con las estimaciones de DiD, comparamos estas rupturas con las estimadas durante el mismo período en 2019.
+
+Sea $D$ la variable de ejecución, que se define como la distancia absoluta en días desde el anuncio de la orden de confinamienro; es negativo para los días anteriores y positivo para los días posteriores, mientras que la fecha del anuncio real o contrafactual se establece como día cero. El anuncio de bloqueo $T_{i,c}$ se define como ya lo habíamos definido anteriormente. Por lo tanto, el modelo RDD-DiD se puede escribir de la siguiente manera:
+$$\small W_{i,c}=\alpha\prime T_{i,c}*Year_{i}+ \psi f(D_{i,c})*Year_{i}+\theta f(D_{i,c})(1-T_{i,c})*Year_{i}+\phi f(D_{i,c})*(1-T_{i,c}) $$
+$$+\beta\prime T_{i,c} + \gamma X_{i-1,c} + \mu\prime_{i}+ \rho\prime_{c}+ \epsilon\prime_{i,c}$$
+
+Donde $\alpha\prime$ refleja el efecto que causó el confinamiento en las búsquedas de Google del término $W_i$, $c$ en el día $i$ en el estado $c$. $f(D_{i,c})$ es una función polinomial de la distancia en días desde el anuncio del confinamiento que interactuó con la variable dummy de _lockdown_ $T_{i,c}$, para permitir diferentes efectos en ambos lados de las regresiones (antes y después). Además, se incluyeron los mismos controles que en los modelos DID.
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE, error=FALSE}
 #cargo los ids de los estados y DC
 data("countries")
 edos <- countries %>% 
@@ -101,7 +179,7 @@ pob <- pob %>%
 ```
 
 
-```{r bajarPalabras, eval=F, cache=TRUE}
+```{r bajarPalabras, eval=F, cache=TRUE, echo=FALSE, message=FALSE, warning=FALSE, error=FALSE}
 
 
 kwlist <- kwlist[! kwlist==""]
@@ -154,7 +232,7 @@ output_week <- future_xmap_dfr(.l = list(kwlist, edos,date),
 write.csv(output_week, "download_semanal1.csv")
 ```
 
-```{r rescaling}
+```{r rescaling, echo=FALSE, message=FALSE, warning=FALSE, error=FALSE}
 output <- read.csv("download_diarias.csv") %>% 
   mutate(year=year(date))
 output_week <- read.csv("download_semanal.csv") %>% 
@@ -195,7 +273,7 @@ week_share <- output %>%
 ```
 
 
-```{r treatment}
+```{r treatment,echo=FALSE, message=FALSE, warning=FALSE, error=FALSE}
 
 # a cada estado le pego la fecha en que anunciarion, entro en vigor y empezo en la primera ciudad el lockdown
 # y vienen en otro formato entonces se los cambio
@@ -222,7 +300,7 @@ week_share_join <- week_share_join %>%
 
 ```
 
-```{r muertes}
+```{r muertes,echo=FALSE, message=FALSE, warning=FALSE, error=FALSE}
 
 # le pego las muertes y la poblacion a la base
 
@@ -244,22 +322,20 @@ base_final <- left_join(x=week_share_join,y=muertes,by=c("date","geo")) %>%
 ```
 
 
-```{r dif}
+```{r dif,echo=FALSE, message=FALSE, warning=FALSE, error=FALSE}
 #base_final <- read.csv("base_final.csv")
 
 #corro el dif in dif para cada palabra de la lista
 
 difs <- map(kwlist,function(x){
-  feols(hits_corrected ~ death + i(treat_announced,year,2019) | weekday + geo + week + year,filter(base_final,keyword==x),cluster=~date,weights = ~weightsPop)
-}
+  dif <- feols(hits_corrected ~ death + i(treat_announced,year,2019) | weekday + geo + week + year,filter(base_final,keyword==x),cluster=~date,weights = ~weightsPop)
+  
+  return(dif)
+  }
   )
 
-coefs <- map(1:12,
-             ~unlist(coef(difs[[.]])[2])
-  
-)
 
-fixest::coefplot(difs[12])
+#fixest::coefplot(difs[12])
 
 plotlist <- map(1:12,
                 function(x){
@@ -268,53 +344,44 @@ plotlist <- map(1:12,
                   
                 })
 
-plotlist[[12]]
+#plotlist[[12]]
 
-png(filename="pruebaComb.png")
-combine_plots(
-  plotlist = plotlist[1:6] ,
-  labels = "auto",
-  annotation.args = list(title = "Efecto del lockdown")
-)
+#png(filename="pruebaComb.png")
+#combine_plots(
+#  plotlist = plotlist[1:2] ,
+#  labels = "auto",
+#  annotation.args = list(title = "Efecto del lockdown")
+#)
 
-dev.off()
-plotlist[[12]]
+#dev.off()
+#plotlist[[12]]
 
-a <- grid.arrange(grobs = plotlist[1:4])
+#a <- gridExtra::grid.arrange(grobs = plotlist[1:4])
+#a
+#ggcoefstats(difs[[12]],.name_repair="dif")
+```
 
-ggcoefstats(difs[[12]],.name_repair="dif")
+```{r, figures-side, fig.show="hold", out.width="50%",echo=T}
+#plotlist
+for(i in 1:12){
+  plotlist[[i]]
+}
+
 ```
 
 
-```{r,results='asis'}
-a <- etable(difs[1],tex = F)
-kable(a,format = "html")
+```{r,results='asis', echo=FALSE, message=FALSE, warning=FALSE, error=FALSE}
+a <- etable(difs[1:6],tex = F,cluster= ~date,
+            digits = 2,drop = "death", depvar = F,dict=c(treat_announced="efecto",year="lockdown"),
+            extraline = list("_Weights by State" = 
+                          c("Yes", "Yes", "Yes", "Yes", "Yes", "Yes"),
+                          "_FE by COVID Deaths" = 
+                          c("Yes", "Yes", "Yes", "Yes", "Yes", "Yes")),sdBelow = T)
+colnames(a) <- kwlist[1:6]
+#kable(a,)
+
+a %>% 
+kable(align = c("c", "c", "c","c", "c", "c"), caption="Efecto del lockdown en las búsquedas", digits=3,format = "html") %>%
+  kable_classic(full_width = F, html_font = "Cambria") %>%
+  row_spec(0, bold = T)
 ```
-
-```{r rdd}
-#plot
-base_final_rdd <- base_final %>% 
-  filter(!is.na(Lockdown.announced)) %>% 
-  mutate(duration=as.integer(date-Lockdown.announced))
-
-stock_2020 <- base_final_rdd %>% 
-  filter(keyword=="stock",year==2020) %>% 
-  dummy_cols(c("weekday","geo"),remove_first_dummy = T)
-
-covs <- cbind.data.frame(stock_2020$death,
-                         stock_2020[,(ncol(base_final)+1):ncol(stock_2020)])
-
-b <- rdplot(y=stock_2020$hits_corrected,x=stock_2020$duration,c=0,p=10,x.lim = c(-30,20),covs = covs)
-
-a <- rdrobust(y=stock_2020$hits_corrected,x=stock_2020$duration,c=0,p=3,covs=covs)
-
-rdd <- rddensity(X=stock_2020$duration)
-rdplotdensity(rdd,X=stock_2020$duration)
-#
-
-ggplot(stock_2020,aes(x=duration))+
-  geom_histogram()
-
-
-```
-
