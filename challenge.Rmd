@@ -437,6 +437,7 @@ ggplot(stock_2020,aes(x=duration))+
 
 
 ```
+
 ## Conclusiones 
 
 Quizá en los resultados no se aprecia en todas las palabras que el confinamiento animó a muchas personas a considerar la bolsa como un a fuente extra de ingresos. Este hecho puede deberse a que al mismo tiempo de que muchas personas voltearon a ver esta alternativa, muchas otras vieron en los mercados financieros mucha incertudumbre. Por lo que el efecto se pudo haber neteado por ambos casos de personas.Esta suposición la puede respaldar el hecho de que, aunque en promedio el nivel de búsquedas no fue muy significativo, la varianza del nivel de búsquedas si aumentó. Por lo tanto, aumentó la volatilidad en las búsquedas. Que haya habido más volatilidad en las búsquedas defiende también nuestra hipótesis de que más gente se interesó en la bolsa y otras personas la dejaron de ver como alternativa para aumentar sus ingresos.
