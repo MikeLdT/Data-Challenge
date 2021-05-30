@@ -318,7 +318,7 @@ base_final <- left_join(x=week_share_join,y=muertes,by=c("date","geo")) %>%
 
 
 ```
-## Resultados del _DiD_
+### Resultados del _DiD_
 
 
 ```{r dif,echo=FALSE, message=FALSE, warning=FALSE, error=FALSE}
@@ -362,7 +362,12 @@ a
 ggcoefstats(difs[[12]],.name_repair="dif")
 ```
 
+Esta tabla muestra la estimación de diferencias en diferencias. En este modelo la variable dependiente es hits_corrected, que se refiere al nivel de búsqueda que hay de cierta palabra, en este caso las selecionadas, en un día. La escala de estos niveles está en un rango de 0 a 100. El modelo incluye como controles una variable dummy que toma el valor 1 en los días posteriores al anuncio del confinamiento y 0 en los días anteriores, así como los efectos fijos de los estados, año, semana, día y el número de nuevas muertes con retraso de un día. Los errores estándar están entre paréntesis. Los errores estándar se agrupan a nivel de día. 
+Los resultados de este modelo nos idican que _ceteris paribus_, el aumento de una muerte en un día está relacionado con la disminución de 0.0016 puntos en el nivel de búsqueda de las palabras que consideramos relevantes. Lo que podría significarse que conforme se agravó más la pandemia, las personas se interesaban menos en buscar temas relacionados con inversiones, o podría ser que simplemente muchos desistían cuando empeoraba la pandemia. También, podría relacionarse con la incertidumbre que causaba en el país el aumento de las muertes por COVID-19.
 
+
+
+### Efectos del lockdown estimado por _DiD_ para los términos_Stock_, _Stocks_, _Market_, _NYSE_, _Finance_ y _Dow Joes_
 ```{r,results='asis', echo=FALSE, message=FALSE, warning=FALSE, error=FALSE}
 a <- etable(difs[1:6],tex = F,cluster= ~date,
             digits = 2,drop = "death", depvar = F,dict=c(treat_announced="efecto",year="lockdown"),
@@ -371,7 +376,7 @@ a <- etable(difs[1:6],tex = F,cluster= ~date,
 colnames(a) <- kwlist[1:6]
 kable(a,format = "html")
 ```
-
+### Efectos del lockdown estimado por _DiD_  para los términos _Nasdaq_, _Finances_, _Business_, _Rate_, _Rates_ y _S&P_
 ```{r,results='asis', echo=FALSE, message=FALSE, warning=FALSE, error=FALSE}
 a <- etable(difs[7:12],tex = F,cluster= ~date,
             digits = 2,drop = "death", depvar = F,dict=c(treat_announced="efecto",year="lockdown"),
@@ -385,8 +390,27 @@ kable(a,format = "html")
 
 
 ```
+Estas dos tablas son los resultados del modelo de _Diferencias en Diferencias_ que se realizó para cada una de las palabras que consideramos relevantes. Cada columna describe un modelo para cada término. Los modelos incluyen controles para una variable dummy que toma el valor 1 en los días posteriores al confinamiento y 0 en los días anteriores, así como efectos fijos de estado, semana y día. Los errores estándar están entre paréntesis. Los errores estándar se agrupan a nivel de día. Recordemos que la forma en la que se midieron las busquedas realizadas para cada palabra fue en una escala de niveles que van del 0 al 100 para hacer comparables los años 2019 y 2020. 
 
+Para nuestro modelo con la palabra _"stock"_ podemos concluir que el confinamiento, _ceteris paribus_, aumentó en promedio 0.92 puntos el nivel de busquedas para esta palabra. 
 
+Para el modelo con la palabra _"stocks"_ el cambio causado por el confimaniento sí fue más significativo. _Ceteris paribus_, el hecho de estar en confimaniento está relacionado con un aumento en 5.8 puntos en promedio del nivel de búsquedas realizadas en Google Trends. Cabe resaltar que fue la segunda palabra con mayor aumento en nuestros modelos. 
+
+En en modelo que considera la palabra _"market"_ se observa una caída en el nivel de búsquedas, y el resutado es el siguiente: _Ceteris paribus_, el hecho de estar en confinamiento está relacionado con una disminución en promedio de 0.61 puntos en el nivel de búsquedas realizadas en Google Trends. La caída promedio no fue muy grande en las búsquedas, casi podríamos considerar que se quedó constante. 
+
+El modelo que se realizó con las búsquedas de la palabra _"NYSE"_ reporta un aumento considerable en el nivel de búsqueda. _Ceteris paribus_, el hecho de entrar al confinamiento esá relacionado con un aumento de 4.9 puntos en promedio en el nivel de búsquedas de la palabra en Google Trends. Es la tercera palabra con mayor aumento en todos lod modelos que hicimos. 
+
+En el modelo que consideró a la palabra _"finace"_ tambíen reportó una disminución en el nivel de búsquedas. En este caso, _ceteris paribus_, el hecho de entrar en confinamiento está relacionado con una disminución en promedio de 0.06 puntos en el nivel de búsquedas de Google Trends. Es una disminución mínima, por lo que podemos considerar que no es significativa.
+
+En el modelo que consideró a la palabra _"business"_ tambíen reportó una disminución en el nivel de búsquedas. En este caso, _ceteris paribus_, el hecho de entrar en confinamiento está relacionado con una disminución en promedio de 0.55 puntos en el nivel de búsquedas de Google Trends. Es una disminución mínima, por lo que podemos considerar que no es significativa.
+
+De igual forma el modelo que consideró la palabra _"rate"_ muestra una caída en el nivel de búsquedas. En este caso, _ceteris paribus_, el hecho de entrar en confinamiento está relacionado con una disminución en promedio de 0.75 puntos en el nivel de búsquedas de Google Trends. De igual forma es una disminución poco considerable. 
+
+Sin embargo, el modelo para la palabra _"rates_" sí reporta un pequeño aumento. _Ceteris paribus_, el hecho de entrar en confinamiento, está relacionado con un aumento de 1.1 puntos en el nivel de búsquedas promedio de esta palabra en Google Trends. 
+
+Por último, esta el modelo para la palabra _"S&P_" que reporta el mayor incremento de todos los demás modelos. En este caso se reportó que _ceteris paribus_, el hecho de entrar en confinamiento está relacionado con un aumento de 7.4 puntos en el nivel promedio de búsquedas de estas palabras. 
+
+### Resultados Regresión Discontinua
 ```{r rdd,echo=FALSE, message=FALSE, warning=FALSE, error=FALSE}
 #plot
 base_final_rdd <- base_final %>% 
@@ -413,6 +437,9 @@ ggplot(stock_2020,aes(x=duration))+
 
 
 ```
+## Conclusiones 
 
-## Apéndice de contribuciones 
+Quizá en los resultados no se aprecia en todas las palabras que el confinamiento animó a muchas personas a considerar la bolsa como un a fuente extra de ingresos. Este hecho puede deberse a que al mismo tiempo de que muchas personas voltearon a ver esta alternativa, muchas otras vieron en los mercados financieros mucha incertudumbre. Por lo que el efecto se pudo haber neteado por ambos casos de personas.Esta suposición la puede respaldar el hecho de que, aunque en promedio el nivel de búsquedas no fue muy significativo, la varianza del nivel de búsquedas si aumentó. Por lo tanto, aumentó la volatilidad en las búsquedas. Que haya habido más volatilidad en las búsquedas defiende también nuestra hipótesis de que más gente se interesó en la bolsa y otras personas la dejaron de ver como alternativa para aumentar sus ingresos.
+
+ç   ## Apéndice de contribuciones 
 Miguel y Anahí investigaron los términos de búsqueda que se utilizaron para construir la base de datos. Miguel hizo todo el código para bajar la base de datos de Google Trends y plantear el DiD y la regresión discontinúa. Anahí se encargó de crear el blog y darle todo el diseño y estructura. Alejandro Gómez se encargo de describir la metodología utilizada y dar interpretación a los resultados. Miguel realizó las gráficas junto con Anahí y ayudaron todos a las conclusiones. Alejandro Ortiz no participó en el trabajo de manera activa. 
