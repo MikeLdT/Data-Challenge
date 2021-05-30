@@ -35,9 +35,9 @@ La facilidad con la que uno puede comprar acciones con un simple swipe a la izqu
 
 Por esta razón hemos decidido analizar los efectos del lockdown en Estados Unidos para descubrir si existe un efecto causal en la tendencia de búsqueda de palabras relacionadas al mercado accionario utilizando Google Trends. Buscamos probar que debido a los confinamientos el número de búsquedas relacionadas con inversiones han aumentado. 
 
-```{r, echo=F}
-options(repos="https://cran.rstudio.com" )
-
+```{r setup, include=F}
+#options(repos="https://cran.rstudio.com" )
+knitr::opts_chunk$set(echo = TRUE, comment = NA, message = FALSE)
 ```
 
 
@@ -58,7 +58,6 @@ library(rdrobust)
 library(fastDummies)
 library(rddensity)
 library(ggstatsplot)
-library(Seurat)
 library(gridExtra)
 library("rmarkdown")
 library("naniar")
