@@ -404,7 +404,7 @@ colnames(a) <- kwlist[7:12]
 a %>% 
 kable(align = c("c", "c", "c","c", "c", "c"), digits=3,format = "html") %>%
   kable_classic(full_width = F, html_font = "Cambria") %>%
-  footnote(general = "Elaboración propia con datos de Google Trends.",threeparttable = T, footnote_as_chunk = T) %>%
+  footnote(general = "Signif. codes: *** p<0.001 ** p<0.01 * p<0.05 ",threeparttable = T, footnote_as_chunk = T) %>%
   row_spec(0, bold = T)
 
 #mean(pull(select(filter(base_final,keyword=="nasdaq",year==2019),hits_corrected)))
@@ -465,8 +465,8 @@ rddplots_2020_apendix <- map(kwlist,function(x){
   
 b <- rdplot(y=stock_2020$hits_corrected,x=stock_2020$duration,c=0)
 
-rdd <- rddensity(X=stock_2020$duration)
-appendix <- rdplotdensity(rdd,X=stock_2020$duration)
+rdd_plots <- rddensity(X=stock_2020$duration)
+appendix <- rdplotdensity(rdd_plots,X=stock_2020$duration)
 
 
 })
@@ -485,6 +485,46 @@ b <- rdplot(y=stock_2020$hits_corrected,x=stock_2020$duration,c=0)
 
 
 ```
+
+### Efectos del lockdown estimado por _RDD_ para los términos_Stock_, _Stocks_, _Market_, _NYSE_, _Finance_ y _Dow Joes_
+```{r,results='asis', echo=FALSE, message=FALSE, warning=FALSE, error=FALSE}
+a <- etable(rdd[1:6],tex = F,cluster= ~date,
+            digits = 2, drop="duration", depvar = F,dict=c(treat_announced="efecto",year="lockdown"),
+            extraline = list("_Weights by State" = 
+                          c("Yes", "Yes", "Yes", "Yes", "Yes", "Yes"),
+                          "_FE by COVID Deaths" = 
+                          c("Yes", "Yes", "Yes", "Yes", "Yes", "Yes")),sdBelow = T)
+colnames(a) <- kwlist[1:6]
+#kable(a,)
+
+a %>% 
+kable(align = c("c", "c", "c","c", "c", "c"), caption="Efecto del lockdown en las búsquedas", digits=3,format = "html") %>%
+  kable_classic(full_width = F, html_font = "Cambria") %>%
+  row_spec(0, bold = T)
+```
+### Efectos del lockdown estimado por _RDD_  para los términos _Nasdaq_, _Finances_, _Business_, _Rate_, _Rates_ y _S&P_
+```{r,results='asis', echo=FALSE, message=FALSE, warning=FALSE, error=FALSE}
+a <- etable(difs[7:12],tex = F,cluster= ~date,
+            digits = 2,drop="duration", depvar = F,dict=c(treat_announced="efecto",year="lockdown"),
+            extraline = list("_Weights by State" = 
+                          c("Yes", "Yes", "Yes", "Yes", "Yes", "Yes"),
+                          "_FE by COVID Deaths" = 
+                          c("Yes", "Yes", "Yes", "Yes", "Yes", "Yes")))
+colnames(a) <- kwlist[7:12]
+#kable(a,format = "html")
+
+a %>% 
+kable(align = c("c", "c", "c","c", "c", "c"), digits=3,format = "html") %>%
+  kable_classic(full_width = F, html_font = "Cambria") %>%
+  footnote(general = "Signif. codes: *** p<0.001 ** p<0.01 * p<0.05 ",threeparttable = T, footnote_as_chunk = T) %>%
+  row_spec(0, bold = T)
+
+#mean(pull(select(filter(base_final,keyword=="nasdaq",year==2019),hits_corrected)))
+
+
+
+```
+
 
 ## Conclusiones 
 
