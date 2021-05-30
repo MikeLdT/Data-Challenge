@@ -327,16 +327,14 @@ base_final <- left_join(x=week_share_join,y=muertes,by=c("date","geo")) %>%
 #corro el dif in dif para cada palabra de la lista
 
 difs <- map(kwlist,function(x){
-  feols(hits_corrected ~ death + i(treat_announced,year,2019) | weekday + geo + week + year,filter(base_final,keyword==x),cluster=~date,weights = ~weightsPop)
-}
+  dif <- feols(hits_corrected ~ death + i(treat_announced,year,2019) | weekday + geo + week + year,filter(base_final,keyword==x),cluster=~date,weights = ~weightsPop)
+  
+  return(dif)
+  }
   )
 
-coefs <- map(1:12,
-             ~unlist(coef(difs[[.]])[2])
-  
-)
 
-fixest::coefplot(difs[12])
+#fixest::coefplot(difs[12])
 
 plotlist <- map(1:12,
                 function(x){
@@ -345,21 +343,29 @@ plotlist <- map(1:12,
                   
                 })
 
-plotlist[[12]]
+#plotlist[[12]]
 
-png(filename="pruebaComb.png")
-combine_plots(
-  plotlist = plotlist[1:2] ,
-  labels = "auto",
-  annotation.args = list(title = "Efecto del lockdown")
-)
+#png(filename="pruebaComb.png")
+#combine_plots(
+#  plotlist = plotlist[1:2] ,
+#  labels = "auto",
+#  annotation.args = list(title = "Efecto del lockdown")
+#)
 
-dev.off()
-plotlist[[12]]
+#dev.off()
+#plotlist[[12]]
 
-a <- grid.arrange(grobs = plotlist[1:4])
-a
-ggcoefstats(difs[[12]],.name_repair="dif")
+#a <- gridExtra::grid.arrange(grobs = plotlist[1:4])
+#a
+#ggcoefstats(difs[[12]],.name_repair="dif")
+```
+
+```{r, figures-side, fig.show="hold", out.width="50%",echo=T}
+#plotlist
+for(i in 1:12){
+  plotlist[[i]]
+}
+
 ```
 
 Esta tabla muestra la estimación de diferencias en diferencias. En este modelo la variable dependiente es hits_corrected, que se refiere al nivel de búsqueda que hay de cierta palabra, en este caso las selecionadas, en un día. La escala de estos niveles está en un rango de 0 a 100. El modelo incluye como controles una variable dummy que toma el valor 1 en los días posteriores al anuncio del confinamiento y 0 en los días anteriores, así como los efectos fijos de los estados, año, semana, día y el número de nuevas muertes con retraso de un día. Los errores estándar están entre paréntesis. Los errores estándar se agrupan a nivel de día. 
@@ -372,18 +378,33 @@ Los resultados de este modelo nos idican que _ceteris paribus_, el aumento de un
 a <- etable(difs[1:6],tex = F,cluster= ~date,
             digits = 2,drop = "death", depvar = F,dict=c(treat_announced="efecto",year="lockdown"),
             extraline = list("_Weights by State" = 
-                          c("Yes", "Yes", "Yes", "Yes", "Yes", "Yes")))
+                          c("Yes", "Yes", "Yes", "Yes", "Yes", "Yes"),
+                          "_FE by COVID Deaths" = 
+                          c("Yes", "Yes", "Yes", "Yes", "Yes", "Yes")),sdBelow = T)
 colnames(a) <- kwlist[1:6]
-kable(a,format = "html")
+#kable(a,)
+
+a %>% 
+kable(align = c("c", "c", "c","c", "c", "c"), caption="Efecto del lockdown en las búsquedas", digits=3,format = "html") %>%
+  kable_classic(full_width = F, html_font = "Cambria") %>%
+  row_spec(0, bold = T)
 ```
 ### Efectos del lockdown estimado por _DiD_  para los términos _Nasdaq_, _Finances_, _Business_, _Rate_, _Rates_ y _S&P_
 ```{r,results='asis', echo=FALSE, message=FALSE, warning=FALSE, error=FALSE}
 a <- etable(difs[7:12],tex = F,cluster= ~date,
             digits = 2,drop = "death", depvar = F,dict=c(treat_announced="efecto",year="lockdown"),
             extraline = list("_Weights by State" = 
+                          c("Yes", "Yes", "Yes", "Yes", "Yes", "Yes"),
+                          "_FE by COVID Deaths" = 
                           c("Yes", "Yes", "Yes", "Yes", "Yes", "Yes")))
 colnames(a) <- kwlist[7:12]
-kable(a,format = "html")
+#kable(a,format = "html")
+
+a %>% 
+kable(align = c("c", "c", "c","c", "c", "c"), digits=3,format = "html") %>%
+  kable_classic(full_width = F, html_font = "Cambria") %>%
+  footnote(general = "Elaboración propia con datos de Google Trends.",threeparttable = T, footnote_as_chunk = T) %>%
+  row_spec(0, bold = T)
 
 #mean(pull(select(filter(base_final,keyword=="nasdaq",year==2019),hits_corrected)))
 
@@ -411,29 +432,55 @@ Sin embargo, el modelo para la palabra _"rates_" sí reporta un pequeño aumento
 Por último, esta el modelo para la palabra _"S&P_" que reporta el mayor incremento de todos los demás modelos. En este caso se reportó que _ceteris paribus_, el hecho de entrar en confinamiento está relacionado con un aumento de 7.4 puntos en el nivel promedio de búsquedas de estas palabras. 
 
 ### Resultados Regresión Discontinua
-```{r rdd,echo=FALSE, message=FALSE, warning=FALSE, error=FALSE}
-#plot
+```{r rddahorasi}
+#cambiar la base
 base_final_rdd <- base_final %>% 
   filter(!is.na(Lockdown.announced)) %>% 
-  mutate(duration=as.integer(date-Lockdown.announced))
+  mutate(duration=ifelse(year==2020,as.integer(date-Lockdown.announced),as.integer(date-Lockdown.announced)+365))
 
-stock_2020 <- base_final_rdd %>% 
-  filter(keyword=="stock",year==2020) %>% 
-  dummy_cols(c("weekday","geo"),remove_first_dummy = T)
 
-covs <- cbind.data.frame(stock_2020$death,
-                         stock_2020[,(ncol(base_final)+1):ncol(stock_2020)])
 
-b <- rdplot(y=stock_2020$hits_corrected,x=stock_2020$duration,c=0,p=10,x.lim = c(-30,20),covs = covs)
+#covs <- cbind.data.frame(stock_2020$death,stock_2020[,(ncol(base_final)+1):ncol(stock_2020)])
 
-a <- rdrobust(y=stock_2020$hits_corrected,x=stock_2020$duration,c=0,p=3,covs=covs)
+rdd <- map(kwlist,function(x){
+  feols(hits_corrected ~ death + i(treat_announced,year,2019) +
+     duration*i(treat_announced,year,2019) +
+    duration*i((1-treat_announced),year,2019) - year +
+    treat_announced*duration  +
+   (1-treat_announced)*duration - duration  
+      | weekday + geo + week + year,filter(base_final_rdd,keyword==x,duration!=0),cluster=~date,weights = ~weightsPop,)
+}
+  )
+```
+
+
+
+```{r rdd,echo=FALSE, message=FALSE, warning=FALSE, error=FALSE}
+#plot
+
+rddplots_2020_apendix <- map(kwlist,function(x){
+  stock_2020 <- base_final_rdd %>% 
+  filter(keyword==x,year==2020)
+  
+b <- rdplot(y=stock_2020$hits_corrected,x=stock_2020$duration,c=0)
 
 rdd <- rddensity(X=stock_2020$duration)
-rdplotdensity(rdd,X=stock_2020$duration)
-#
+appendix <- rdplotdensity(rdd,X=stock_2020$duration)
 
-ggplot(stock_2020,aes(x=duration))+
-  geom_histogram()
+
+})
+
+rddplots_2019 <- map(kwlist,function(x){
+  stock_2020 <- base_final_rdd %>% 
+  filter(keyword==x,year==2019)
+  
+b <- rdplot(y=stock_2020$hits_corrected,x=stock_2020$duration,c=0)
+
+
+})
+
+
+
 
 
 ```
