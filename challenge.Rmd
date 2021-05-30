@@ -41,7 +41,7 @@ knitr::opts_chunk$set(echo = TRUE, comment = NA, message = FALSE)
 ```
 
 
-```{r, echo=FALSE, message=FALSE, warning=FALSE, error=FALSE}
+```{r, include=FALSE, message=FALSE, warning=FALSE, error=FALSE}
 
 library("dplyr")
 library("ggplot2")
@@ -123,7 +123,9 @@ Los errores estándar son sólidos y están agrupados a nivel de día. La suposi
 Para mostrar que hay una ruptura estructural inmediata causada por el confinamiento en las tendencias de búsqueda de inversiones, también utilizaremos el método de regresión discontinua (RDD), que identifica rupturas en dos series paramétricas estimadas antes y después del confinamiento. Al igual que con las estimaciones de DiD, comparamos estas rupturas con las estimadas durante el mismo período en 2019.
 
 Sea $D$ la variable de ejecución, que se define como la distancia absoluta en días desde el anuncio de la orden de confinamienro; es negativo para los días anteriores y positivo para los días posteriores, mientras que la fecha del anuncio real o contrafactual se establece como día cero. El anuncio de bloqueo $T_{i,c}$ se define como ya lo habíamos definido anteriormente. Por lo tanto, el modelo RDD-DiD se puede escribir de la siguiente manera:
-$$\small W_{i,c}=\alpha\prime T_{i,c}*Year_{i}+ \psi f(D_{i,c})*Year_{i}+\theta f(D_{i,c})(1-T_{i,c})*Year_{i}+\phi f(D_{i,c})*(1-T_{i,c}) +\beta\prime T_{i,c} + \gamma X_{i-1,c} + \mu\prime_{i}+ \rho\prime_{c}+ \epsilon\prime_{i,c}$$
+$$\small W_{i,c}=\alpha\prime T_{i,c}*Year_{i}+ \psi f(D_{i,c})*Year_{i}+\theta f(D_{i,c})(1-T_{i,c})*Year_{i}+\phi f(D_{i,c})*(1-T_{i,c}) $$
+ 
+$$+\beta\prime T_{i,c} + \gamma X_{i-1,c} + \mu\prime_{i}+ \rho\prime_{c}+ \epsilon\prime_{i,c}$$
 
 Donde $\alpha\prime$ refleja el efecto que causó el confinamiento en las búsquedas de Google del término $W_i$, $c$ en el día $i$ en el estado $c$. $f(D_{i,c})$ es una función polinomial de la distancia en días desde el anuncio del confinamiento que interactuó con la variable dummy de _lockdown_ $T_{i,c}$, para permitir diferentes efectos en ambos lados de las regresiones (antes y después). Además, se incluyeron los mismos controles que en los modelos DID.
 
